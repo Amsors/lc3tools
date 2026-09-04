@@ -184,6 +184,7 @@ NAN_METHOD(RestartMachine)
 NAN_METHOD(ReinitializeMachine)
 {
     try {
+        inputter.clearInput();
         sim->zeroState();
     } catch(std::exception const & e) {
         Nan::ThrowError(e.what());

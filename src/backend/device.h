@@ -26,6 +26,7 @@ namespace core
         IDevice(void) = default;
         virtual ~IDevice(void) {}
 
+        virtual void reset(void) { }
         virtual void startup(void) { }
         virtual void shutdown(void) { }
         virtual std::pair<uint16_t, PIMicroOp> read(uint16_t addr) = 0;
@@ -41,6 +42,7 @@ namespace core
         RWReg(uint16_t data_addr) : data_addr(data_addr) { data.setValue(0x0000); }
         virtual ~RWReg(void) override = default;
 
+        virtual void reset(void) override;
         virtual std::pair<uint16_t, PIMicroOp> read(uint16_t addr) override;
         virtual PIMicroOp write(uint16_t addr, uint16_t value) override;
         virtual std::vector<uint16_t> getAddrMap(void) const override;
@@ -57,6 +59,7 @@ namespace core
         KeyboardDevice(lc3::utils::IInputter & inputter);
         virtual ~KeyboardDevice(void) override = default;
 
+        virtual void reset(void) override;
         virtual void startup(void) override;
         virtual void shutdown(void) override;
         virtual std::pair<uint16_t, PIMicroOp> read(uint16_t addr) override;
@@ -89,6 +92,7 @@ namespace core
         DisplayDevice(lc3::utils::Logger & logger);
         virtual ~DisplayDevice(void) override = default;
 
+        virtual void reset(void) override;
         virtual std::pair<uint16_t, PIMicroOp> read(uint16_t addr) override;
         virtual PIMicroOp write(uint16_t addr, uint16_t value) override;
         virtual std::vector<uint16_t> getAddrMap(void) const override;

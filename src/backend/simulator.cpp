@@ -75,6 +75,11 @@ void Simulator::setup(uint64_t t_delta)
 void Simulator::reinitialize(void)
 {
     state.reinitialize();
+    while(! events.empty()) { events.pop(); }
+    stack_trace.clear();
+    inst_count_this_run = 0;
+    pre_inst_pc = 0;
+    async_interrupt = false;
 }
 
 void Simulator::triggerSuspend()

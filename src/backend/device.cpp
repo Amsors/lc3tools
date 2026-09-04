@@ -6,6 +6,11 @@
 
 using namespace lc3::core;
 
+void RWReg::reset(void)
+{
+    data.setValue(0x0000);
+}
+
 std::pair<uint16_t, PIMicroOp> RWReg::read(uint16_t addr)
 {
     if(addr == data_addr) {
@@ -31,8 +36,15 @@ std::vector<uint16_t> RWReg::getAddrMap(void) const
 
 KeyboardDevice::KeyboardDevice(lc3::utils::IInputter & inputter) : inputter(inputter)
 {
+    reset();
+}
+
+void KeyboardDevice::reset(void)
+{
     status.setValue(0x0000);
     data.setValue(0x0000);
+    std::queue<KeyInfo> empty;
+    key_buffer.swap(empty);
 }
 
 void KeyboardDevice::startup(void)
@@ -118,6 +130,11 @@ std::pair<uint16_t, PIMicroOp> DisplayDevice::read(uint16_t addr)
 }
 
 DisplayDevice::DisplayDevice(lc3::utils::Logger & logger) : logger(logger)
+{
+    reset();
+}
+
+void DisplayDevice::reset(void)
 {
     status.setValue(0x0000);
     data.setValue(0x0000);

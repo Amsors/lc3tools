@@ -2,6 +2,7 @@
  * Copyright 2020 McGraw-Hill Education. All rights reserved. No reproduction or distribution without the prior written consent of McGraw-Hill Education.
  */
 #include <cstdint>
+#include <unordered_set>
 #include "device_regs.h"
 #include "device.h"
 #include "state.h"
@@ -20,6 +21,10 @@ MachineState::MachineState(void) : reset_pc(RESET_PC), pc(0), ir(0), decoded_ir(
 void MachineState::reinitialize(void)
 {
     reset_pc = RESET_PC;
+    pc = 0;
+    ir = 0;
+    decoded_ir = nullptr;
+    ssp = 0;
     first_init = true;
 
     mem.clear();
@@ -27,6 +32,21 @@ void MachineState::reinitialize(void)
 
     rf.clear();
     rf.resize(16);
+
+    std::queue<InterruptType> empty_interrupts;
+    pending_interrupts.swap(empty_interrupts);
+
+    std::stack<FuncType> empty_func_trace;
+    func_trace.swap(empty_func_trace);
+    pending_callbacks.clear();
+
+    // Multiple addresses may map to the same device, so reset each device only once.
+    std::unordered_set<IDevice *> reset_devices;
+    for(auto const & mapping : mmio) {
+        if(reset_devices.insert(mapping.second.get()).second) {
+            mapping.second->reset();
+        }
+    }
 }
 
 void MachineState::setIgnorePrivilege(bool ignore_privilege) { this->ignore_privilege = ignore_privilege; }
