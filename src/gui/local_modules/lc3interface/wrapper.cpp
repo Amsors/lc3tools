@@ -71,6 +71,11 @@ public:
 
 NAN_METHOD(Init)
 {
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot reinitialize the interface while the simulator is running");
+        return;
+    }
+
     try {
         as = std::make_shared<lc3::as>(printer, DEFAULT_BUILD_PRINT_LEVEL, false);
         conv = std::make_shared<lc3::conv>(printer, DEFAULT_BUILD_PRINT_LEVEL);
@@ -402,6 +407,11 @@ NAN_METHOD(SetRegValue)
         return;
     }
 
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot modify registers while the simulator is running");
+        return;
+    }
+
     Nan::Utf8String str(info[0].As<v8::String>());
     std::string reg_name((char const *) *str);
     std::transform(reg_name.begin(), reg_name.end(), reg_name.begin(), ::tolower);
@@ -465,6 +475,11 @@ NAN_METHOD(SetMemValue)
         return;
     }
 
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot modify memory while the simulator is running");
+        return;
+    }
+
     uint32_t addr = Nan::To<uint32_t>(info[0]).FromJust();
     uint32_t value = Nan::To<uint32_t>(info[1]).FromJust();
     try {
@@ -514,6 +529,11 @@ NAN_METHOD(SetMemLine)
         return;
     }
 
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot modify memory metadata while the simulator is running");
+        return;
+    }
+
     uint32_t addr = Nan::To<uint32_t>(info[0]).FromJust();
     Nan::Utf8String str(info[1].As<v8::String>());
     std::string line((char const *) *str);
@@ -534,6 +554,11 @@ NAN_METHOD(SetIgnorePrivilege)
 
     if(! info[0]->IsBoolean()) {
         Nan::ThrowError("Must provide setting as a bool argument");
+        return;
+    }
+
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot change privilege handling while the simulator is running");
         return;
     }
 
@@ -609,6 +634,11 @@ NAN_METHOD(SetBreakpoint)
         return;
     }
 
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot modify breakpoints while the simulator is running");
+        return;
+    }
+
     uint32_t addr = Nan::To<uint32_t>(info[0]).FromJust();
     try {
         sim->setBreakpoint(addr);
@@ -626,6 +656,11 @@ NAN_METHOD(RemoveBreakpoint)
 
     if(! info[0]->IsNumber()) {
         Nan::ThrowError("Must provide memory address as a numerical argument");
+        return;
+    }
+
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot modify breakpoints while the simulator is running");
         return;
     }
 

@@ -158,13 +158,19 @@
                   <template slot="items" slot-scope="props">
                     <tr class="mem-row" v-bind:style="data_bg">
                       <div>
-                        <a class="data-cell data-button" @click="toggleBreakpoint(props.item.addr)">
+                        <a class="data-cell data-button"
+                          :class="{'disabled-control': sim.running}"
+                          :aria-disabled="sim.running ? 'true' : 'false'"
+                          @click="toggleBreakpoint(props.item.addr)">
                           <v-icon v-if="breakpointAt(props.item.addr)" color="red">report</v-icon>
                           <v-icon v-else small color="grey" class="breakpoint-icon">report</v-icon>
                         </a>
                       </div>
                       <div>
-                        <a class="data-cell data-button" @click="setPC(props.item.addr)">
+                        <a class="data-cell data-button"
+                          :class="{'disabled-control': sim.running}"
+                          :aria-disabled="sim.running ? 'true' : 'false'"
+                          @click="setPC(props.item.addr)">
                           <v-icon v-if="PCAt(props.item.addr)" color="blue">play_arrow</v-icon>
                           <v-icon v-else small color="grey" class="pc-icon">play_arrow</v-icon>
                         </a>
@@ -495,6 +501,8 @@ export default {
     },
 
     toggleBreakpoint(addr) {
+      if(this.sim.running) { return; }
+
       let idx = this.sim.breakpoints.indexOf(addr);
       if(idx == -1) {
         this.sim.breakpoints.push(addr);
@@ -505,6 +513,8 @@ export default {
       }
     },
     setPC(addr) {
+      if(this.sim.running) { return; }
+
       let new_pc = addr & 0xffff;
       lc3.SetRegValue("pc", new_pc);
       lc3.RestartMachine();
@@ -755,6 +765,11 @@ export default {
 
 .data-button {
   text-align: center !important;
+}
+
+.disabled-control {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
 .breakpoint-icon:hover {
