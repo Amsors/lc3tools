@@ -4,6 +4,7 @@
 #ifndef SIMULATOR_H
 #define SIMULATOR_H
 
+#include <atomic>
 #include <cstdint>
 #include <unordered_map>
 #include <queue>
@@ -48,7 +49,7 @@ namespace core
         void removeBreakpoint(uint16_t pc);
         MachineState & getMachineState(void);
         MachineState const & getMachineState(void) const;
-        void asyncInterrupt(void) { async_interrupt = true; }
+        void asyncInterrupt(void) { async_interrupt.store(true); }
 
         void setPrintLevel(uint32_t print_level);
         void setIgnorePrivilege(bool ignore_privilege);
@@ -68,7 +69,7 @@ namespace core
         uint64_t inst_count_this_run;
         uint16_t pre_inst_pc;
         std::vector<uint16_t> stack_trace;
-        bool async_interrupt;
+        std::atomic<bool> async_interrupt;
 
         void powerOn(uint64_t t_delta);
         void executeEvents(void);
@@ -83,4 +84,3 @@ namespace core
 };
 
 #endif
-

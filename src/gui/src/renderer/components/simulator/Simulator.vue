@@ -13,7 +13,7 @@
     >
       <v-list>
         <v-tooltip right>
-          <v-list-tile slot="activator" @click="openFile()">
+          <v-list-tile slot="activator" :disabled="sim.running" @click="openFile()">
             <v-list-tile-action>
               <v-icon>folder_open</v-icon>
             </v-list-tile-action>
@@ -30,7 +30,7 @@
           <span>Run</span>
         </v-tooltip>
         <v-tooltip right>
-          <v-list-tile slot="activator" @click="reloadFiles">
+          <v-list-tile slot="activator" :disabled="sim.running" @click="reloadFiles">
             <v-list-tile-action>
               <v-icon>refresh</v-icon>
             </v-list-tile-action>
@@ -62,7 +62,7 @@
           <span>Step Out</span>
         </v-tooltip>
         <v-tooltip right>
-          <v-list-tile slot="activator" @click="reinitializeMachine()">
+          <v-list-tile slot="activator" :disabled="sim.running" @click="reinitializeMachine()">
             <v-list-tile-action>
               <v-icon>power_settings_new</v-icon>
             </v-list-tile-action>
@@ -70,7 +70,7 @@
           <span>Reinitialize Machine</span>
         </v-tooltip>
         <v-tooltip right>
-          <v-list-tile slot="activator" @click="randomizeMachine()">
+          <v-list-tile slot="activator" :disabled="sim.running" @click="randomizeMachine()">
             <v-list-tile-action>
               <v-icon>shuffle</v-icon>
             </v-list-tile-action>
@@ -313,7 +313,7 @@ export default {
   },
   activated() {
     let asm_file_name = this.$store.getters.activeFilePath
-    if(asm_file_name !== null &&
+    if(!this.sim.running && asm_file_name !== null &&
       this.$store.getters.activeFileBuildTime > this.$store.getters.activeFileLoadTime)
     {
       let obj_file_name = asm_file_name.substr(0, asm_file_name.lastIndexOf(".")) + ".obj";
@@ -325,6 +325,8 @@ export default {
   },
   methods: {
     async openFile(path) {
+      if(this.sim.running) { return; }
+
       // Todo: try catch around this
       let selectedFiles = [path];
       if (!path) {
@@ -341,12 +343,16 @@ export default {
       }
     },
     loadFile(path) {
+      if(this.sim.running) { return; }
+
       this.loaded_files.add(path);
       lc3.LoadObjectFile(path);
       this.mem_view.start = lc3.GetRegValue("pc");
       this.updateUI();
     },
     reloadFiles() {
+      if(this.sim.running) { return; }
+
       this.loaded_files.forEach((path) => {
         this.loadFile(path);
       });
@@ -372,14 +378,17 @@ export default {
         }
       } else {
         lc3.Pause();
-        this.endSimulation(false);
       }
     },
     reinitializeMachine() {
+      if(this.sim.running) { return; }
+
       lc3.ReinitializeMachine();
       this.updateUI();
     },
     randomizeMachine() {
+      if(this.sim.running) { return; }
+
       lc3.RandomizeMachine();
       this.updateUI();
     },

@@ -15,7 +15,7 @@ using namespace lc3::core;
 static constexpr uint64_t INST_TIMESTEP = 20;
 
 Simulator::Simulator(lc3::utils::IPrinter & printer, lc3::utils::IInputter & inputter, uint32_t print_level) :
-    time(0), logger(printer, print_level)
+    time(0), logger(printer, print_level), inst_count_this_run(0), pre_inst_pc(0), async_interrupt(false)
 {
     devices.emplace_back(std::make_shared<KeyboardDevice>(inputter));
     devices.emplace_back(std::make_shared<DisplayDevice>(logger));
@@ -33,7 +33,6 @@ void Simulator::simulate(void)
 {
     powerOn(0);
     inst_count_this_run = 0;
-    async_interrupt = false;
 
     sim::Decoder decoder;
 
@@ -42,15 +41,13 @@ void Simulator::simulate(void)
         dev->startup();
     }
 
+    // The GUI may request suspension from another thread, so access async_interrupt atomically.
     do {
         handleDevices();
         handleInstruction(decoder);
-    } while(lc3::utils::getBit(state.readMCR(), 15) == 1 && ! async_interrupt);
-    // While this loop is running, async_interrupt will only be read by this thread.  It may be written by another
-    // thread, such as in the context of a GUI running the simulator asynchronously, but even then there will only
-    // by a single writer and a single reader.  Thus, async_interrupt is left unprotected by mutexes.
+    } while(lc3::utils::getBit(state.readMCR(), 15) == 1 && ! async_interrupt.load());
 
-    async_interrupt = false;
+    async_interrupt.store(false);
 
     // Shutdown devices.
     for(PIDevice dev : devices) {
@@ -79,7 +76,7 @@ void Simulator::reinitialize(void)
     stack_trace.clear();
     inst_count_this_run = 0;
     pre_inst_pc = 0;
-    async_interrupt = false;
+    async_interrupt.store(false);
 }
 
 void Simulator::triggerSuspend()

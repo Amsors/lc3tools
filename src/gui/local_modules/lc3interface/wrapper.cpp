@@ -5,6 +5,7 @@
 #include <nan.h>
 
 #include <algorithm>
+#include <atomic>
 #include <memory>
 #include <mutex>
 
@@ -27,6 +28,7 @@ std::shared_ptr<lc3::as> as = nullptr;
 std::shared_ptr<lc3::conv> conv = nullptr;
 std::shared_ptr<lc3::sim> sim = nullptr;
 bool hit_breakpoint = false;
+std::atomic<bool> simulator_running(false);
 
 class SimulatorAsyncWorker : public Nan::AsyncWorker
 {
@@ -43,7 +45,11 @@ public:
             run_function();
         } catch(std::exception const & e) {
             this->SetErrorMessage(e.what());
+        } catch(...) {
+            this->SetErrorMessage("Unknown simulator error");
         }
+
+        simulator_running.store(false);
     }
 
     void HandleOKCallback(void) {
@@ -162,6 +168,11 @@ NAN_METHOD(LoadObjectFile)
         return;
     }
 
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot load an object file while the simulator is running");
+        return;
+    }
+
     Nan::Utf8String str(info[0].As<v8::String>());
     std::string filename((char const *) *str);
 
@@ -174,6 +185,11 @@ NAN_METHOD(LoadObjectFile)
 
 NAN_METHOD(RestartMachine)
 {
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot restart the machine while the simulator is running");
+        return;
+    }
+
     try {
         sim->setup();
     } catch(std::exception const & e) {
@@ -183,6 +199,11 @@ NAN_METHOD(RestartMachine)
 
 NAN_METHOD(ReinitializeMachine)
 {
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot reinitialize the machine while the simulator is running");
+        return;
+    }
+
     try {
         inputter.clearInput();
         sim->zeroState();
@@ -193,6 +214,11 @@ NAN_METHOD(ReinitializeMachine)
 
 NAN_METHOD(RandomizeMachine)
 {
+    if(simulator_running.load()) {
+        Nan::ThrowError("Cannot randomize the machine while the simulator is running");
+        return;
+    }
+
     try {
         sim->randomizeState();
     } catch(std::exception const & e) {
@@ -212,15 +238,16 @@ NAN_METHOD(Run)
         return;
     }
 
+    if(simulator_running.exchange(true)) {
+        Nan::ThrowError("Simulator is already running");
+        return;
+    }
+
     hit_breakpoint = false;
     Nan::AsyncQueueWorker(new SimulatorAsyncWorker(
         []() {
-          try {
             sim->setRunInstLimit(0);
             sim->run();
-          } catch(std::exception const & e) {
-            Nan::ThrowError(e.what());
-          }
         },
         new Nan::Callback(info[0].As<v8::Function>())
     ));
@@ -238,14 +265,15 @@ NAN_METHOD(StepIn)
         return;
     }
 
+    if(simulator_running.exchange(true)) {
+        Nan::ThrowError("Simulator is already running");
+        return;
+    }
+
     hit_breakpoint = false;
     Nan::AsyncQueueWorker(new SimulatorAsyncWorker(
         []() {
-          try {
             sim->stepIn();
-          } catch(std::exception const & e) {
-            Nan::ThrowError(e.what());
-          }
         },
         new Nan::Callback(info[0].As<v8::Function>())
     ));
@@ -263,14 +291,15 @@ NAN_METHOD(StepOut)
         return;
     }
 
+    if(simulator_running.exchange(true)) {
+        Nan::ThrowError("Simulator is already running");
+        return;
+    }
+
     hit_breakpoint = false;
     Nan::AsyncQueueWorker(new SimulatorAsyncWorker(
         []() {
-          try {
             sim->stepOut();
-          } catch(std::exception const & e) {
-            Nan::ThrowError(e.what());
-          }
         },
         new Nan::Callback(info[0].As<v8::Function>())
     ));
@@ -288,14 +317,15 @@ NAN_METHOD(StepOver)
         return;
     }
 
+    if(simulator_running.exchange(true)) {
+        Nan::ThrowError("Simulator is already running");
+        return;
+    }
+
     hit_breakpoint = false;
     Nan::AsyncQueueWorker(new SimulatorAsyncWorker(
         []() {
-          try {
             sim->stepOver();
-          } catch(std::exception const & e) {
-            Nan::ThrowError(e.what());
-          }
         },
         new Nan::Callback(info[0].As<v8::Function>())
     ));
@@ -304,7 +334,9 @@ NAN_METHOD(StepOver)
 NAN_METHOD(Pause)
 {
     try {
-        sim->asyncInterrupt();
+        if(simulator_running.load()) {
+            sim->asyncInterrupt();
+        }
     } catch(std::exception const & e) {
         Nan::ThrowError(e.what());
     }

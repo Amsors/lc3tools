@@ -1,6 +1,6 @@
 {
   "name": "LC3Tools",
-  "version": "2.1.0-amsors-patch.1",
+  "version": "2.1.0",
   "author": "Chirag Sakhuja <chirag.sakhuja@utexas.edu>",
   "description": "LC3Tools frontend",
   "license": "MIT",
